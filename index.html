@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Evident: Leaked Pre/Post Survey</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --teal:   #0E7C66;
+  --purple: #D86DCB;
+  --navy:   #1F3864;
+  --bg:     #F2F8F6;
+  --white:  #ffffff;
+  --text:   #2d2d2d;
+  --muted:  #666;
+  --border: #dde1e6;
+  --r:      10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── Screens ── */
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* ── Container ── */
+.wrap { max-width: 680px; margin: 0 auto; padding: 20px; }
+
+/* ── Header bar ── */
+.hbar {
+  background: var(--navy); color: #fff;
+  padding: 13px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 10;
+}
+.hbar h1 { font-size: 17px; font-weight: 700; letter-spacing: .3px; }
+.lang-sel {
+  background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
+  color: #fff; padding: 4px 8px; border-radius: 6px; font-size: 13px; cursor: pointer;
+}
+.lang-sel option { color: #333; background: #fff; }
+
+/* ── Cards ── */
+.card {
+  background: var(--white); border-radius: var(--r);
+  padding: 24px; margin-bottom: 16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.06);
+}
+
+/* ── Form helpers ── */
+.fg { margin-bottom: 16px; }
+.fg label { display: block; font-weight: 600; font-size: 13px; color: var(--navy); margin-bottom: 6px; }
+.fg input, .fg select {
+  width: 100%; padding: 10px 14px; border: 1.5px solid var(--border);
+  border-radius: 8px; font-size: 15px; transition: border-color .15s;
+}
+.fg input:focus, .fg select:focus { outline: none; border-color: var(--teal); }
+.fg-row { display: flex; gap: 12px; }
+.fg-row .fg { flex: 1; }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-block; padding: 11px 26px; border-radius: 8px;
+  font-size: 15px; font-weight: 600; cursor: pointer; border: none;
+  transition: opacity .15s, transform .1s;
+}
+.btn:active { transform: scale(.98); }
+.btn-full { width: 100%; text-align: center; }
+.btn-primary   { background: var(--teal);   color: #fff; }
+.btn-secondary { background: #eee;          color: var(--text); }
+.btn-outline   { background: #fff; color: var(--teal); border: 2px solid var(--teal); }
+.btn:hover { opacity: .88; }
+
+/* ── Error ── */
+.err { color: #c0392b; font-size: 13px; margin-top: 6px; min-height: 18px; }
+
+/* ── LOGIN ── */
+.login-wrap { max-width: 400px; margin: 60px auto 0; padding: 20px; }
+.login-logo { font-size: 38px; font-weight: 900; color: var(--teal); letter-spacing: -1px; }
+.login-sub  { color: var(--muted); font-size: 14px; margin-bottom: 28px; }
+.login-opts { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.lang-note  { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 6px; display: none; }
+
+/* ── SETUP ── */
+.badge {
+  display: inline-block; background: var(--purple); color: #fff;
+  font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px;
+  text-transform: uppercase; letter-spacing: .5px; margin-bottom: 14px;
+}
+.toggle-row { display: flex; }
+.toggle-row button {
+  flex: 1; padding: 11px; border: 2px solid var(--border); background: #fff;
+  font-size: 14px; font-weight: 700; cursor: pointer; transition: all .15s;
+}
+.toggle-row button:first-child { border-radius: 8px 0 0 8px; }
+.toggle-row button:last-child  { border-radius: 0 8px 8px 0; border-left: none; }
+.toggle-row .tpre  { background: var(--teal);   color: #fff; border-color: var(--teal); }
+.toggle-row .tpost { background: var(--purple);  color: #fff; border-color: var(--purple); }
+.radio-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.ropt {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 16px; border: 2px solid var(--border); border-radius: 8px;
+  cursor: pointer; font-size: 14px; font-weight: 500; transition: border-color .15s, background .15s;
+}
+.ropt input[type=radio] { accent-color: var(--teal); }
+.ropt:has(input:checked) { border-color: var(--teal); background: rgba(14,124,102,.07); }
+
+/* ── SESSION BANNER ── */
+.sbanner {
+  background: var(--navy); color: rgba(255,255,255,.9);
+  padding: 7px 20px; font-size: 12px; display: flex; gap: 18px; flex-wrap: wrap;
+}
+.sbanner strong { color: #fff; }
+
+/* ── PROGRESS ── */
+.prog { height: 4px; background: #ddd; border-radius: 2px; margin-bottom: 18px; overflow: hidden; }
+.prog-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--teal), var(--purple));
+  transition: width .3s; border-radius: 2px;
+}
+
+/* ── INTRO ── */
+.intro {
+  background: #fff; border-radius: var(--r); padding: 20px 24px;
+  margin-bottom: 16px; border-left: 4px solid var(--teal);
+  font-size: 14px; line-height: 1.75;
+}
+.intro p + p { margin-top: 8px; }
+
+/* ── QUESTION CARD ── */
+.qcard { background: #fff; border-radius: var(--r); padding: 20px 24px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
+.qnum  { display: inline-block; background: var(--teal); color: #fff; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 4px; margin-bottom: 10px; }
+.qtext { font-size: 15px; font-weight: 600; color: var(--navy); line-height: 1.5; margin-bottom: 10px; }
+.qstmt {
+  font-style: italic; background: #f8f9fb; border-left: 3px solid var(--purple);
+  padding: 9px 13px; border-radius: 0 6px 6px 0; font-size: 14px; line-height: 1.65;
+  margin-bottom: 16px;
+}
+
+/* ── LIKERT ── */
+.likert { display: flex; gap: 6px; flex-wrap: wrap; }
+.lopt { flex: 1; min-width: 56px; }
+.lopt input[type=radio] { display: none; }
+.lopt label {
+  display: block; text-align: center; padding: 10px 5px; border: 2px solid var(--border);
+  border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: 500; line-height: 1.3;
+  transition: border-color .15s, background .15s, color .15s;
+}
+.lopt input:checked + label { border-color: var(--teal); background: var(--teal); color: #fff; }
+.lopt.ns label  { border-style: dashed; color: var(--muted); }
+.lopt.ns input:checked + label { border-color: var(--muted); background: var(--muted); color: #fff; border-style: solid; }
+
+/* ── MULTI SELECT ── */
+.checks { display: flex; flex-direction: column; gap: 8px; }
+.chkopt {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 14px; border: 2px solid var(--border); border-radius: 8px;
+  cursor: pointer; font-size: 14px; transition: border-color .15s, background .15s;
+}
+.chkopt input[type=checkbox] { accent-color: var(--teal); width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; }
+.chkopt:has(input:checked) { border-color: var(--teal); background: rgba(14,124,102,.07); }
+
+/* ── THANK YOU ── */
+.ty-card { background: #fff; border-radius: var(--r); padding: 48px 30px; margin-top: 40px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,.08); }
+.ty-icon { font-size: 56px; margin-bottom: 14px; }
+.ty-card h2 { color: var(--teal); font-size: 22px; margin-bottom: 10px; }
+.ty-card p  { color: var(--muted); font-size: 14px; line-height: 1.7; margin-bottom: 24px; }
+
+/* ── ADMIN ── */
+.tabs { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 20px; }
+.tab  { padding: 10px 18px; cursor: pointer; font-weight: 600; font-size: 14px; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .15s; }
+.tab.active { border-bottom-color: var(--teal); color: var(--teal); }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 22px; }
+.stat { background: #fff; border-radius: 8px; padding: 16px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,.06); }
+.stat .n { font-size: 30px; font-weight: 800; color: var(--teal); }
+.stat .l { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.cchart { background: #fff; border-radius: var(--r); padding: 18px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
+.cchart h3 { font-size: 13px; color: var(--navy); font-weight: 600; margin-bottom: 14px; }
+.dtable { width: 100%; border-collapse: collapse; font-size: 12px; }
+.dtable th { background: var(--navy); color: #fff; padding: 8px 10px; text-align: left; white-space: nowrap; }
+.dtable td { padding: 7px 10px; border-bottom: 1px solid var(--border); }
+.dtable tr:nth-child(even) td { background: #f9f9f9; }
+
+/* ── Spinner ── */
+.spin {
+  display: inline-block; width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,.35); border-top-color: #fff;
+  border-radius: 50%; animation: _spin .55s linear infinite;
+  vertical-align: middle; margin-right: 6px;
+}
+@keyframes _spin { to { transform: rotate(360deg); } }
+
+/* ── Required msg ── */
+.req-msg { color: #c0392b; font-size: 13px; margin: 0 0 10px; display: none; }
+
+/* ── Translating overlay ── */
+body.translating .wrap, body.translating .qcard, body.translating .intro { opacity: .55; pointer-events: none; }
+
+@media (max-width: 480px) {
+  .wrap { padding: 12px; }
+  .login-wrap { padding: 12px; margin-top: 30px; }
+  .likert { gap: 4px; }
+  .fg-row { flex-direction: column; }
+  .stats { grid-template-columns: repeat(2,1fr); }
+  .hbar h1 { font-size: 15px; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="s-login" class="screen active">
+  <div class="login-wrap">
+    <div class="card">
+      <div class="login-logo" style="font-size:26px;letter-spacing:0;">Evident: Leaked</div>
+      <div class="login-sub" data-i18n="login_sub">Pre / Post Survey</div>
+      <div class="fg" style="margin-top:22px;">
+        <label data-i18n="login_pw_lbl">Password</label>
+        <input type="password" id="login-pw" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin('form')">
+      </div>
+      <p class="err" id="login-err"></p>
+      <div class="login-opts">
+        <button class="btn btn-primary btn-full" onclick="doLogin('form')" data-i18n="login_start">Start Test</button>
+        <button class="btn btn-outline btn-full" onclick="doLogin('admin')" data-i18n="login_admin">View Results (Admin)</button>
+      </div>
+      <div style="margin-top:20px;">
+        <select id="ls-login" onchange="setLang(this.value)" style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;background:#f9fbf9;">
+          <option value="en">&#127760; English</option>
+          <option value="th">&#127481;&#127469; Thai</option>
+          <option value="es">&#127466;&#127480; Spanish</option>
+          <option value="sm">&#127484;&#127480; Samoan</option>
+          <option value="to">&#127481;&#127476; Tongan</option>
+          <option value="fj">&#127467;&#127471; Fijian</option>
+          <option value="mi">&#127472;&#127487; Maori</option>
+        </select>
+        <p class="lang-note" id="lang-note" data-i18n="lang_note">Note: Pacific island language translations are machine-generated and quality may vary.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FACILITATOR SETUP -->
+<div id="s-setup" class="screen">
+  <div class="hbar">
+    <h1 data-i18n="setup_h">Facilitator Setup</h1>
+    <select class="lang-sel" onchange="setLang(this.value)" id="ls-setup">
+      <option value="en">EN</option><option value="th">TH</option>
+      <option value="es">ES</option><option value="sm">SM</option>
+      <option value="to">TO</option><option value="fj">FJ</option><option value="mi">MI</option>
+    </select>
+  </div>
+  <div class="wrap" style="padding-top:20px;">
+    <div class="card">
+      <div class="badge" data-i18n="badge_fac">Facilitator Only</div>
+      <h2 style="font-size:15px;color:var(--navy);margin-bottom:18px;" data-i18n="setup_session">Session Details</h2>
+      <div class="fg">
+        <label data-i18n="setup_type_lbl">Test Type</label>
+        <div class="toggle-row">
+          <button id="btn-pre" class="tpre" onclick="setPP('Pre')" data-i18n="btn_pre">PRE-TEST</button>
+          <button id="btn-post" onclick="setPP('Post')" data-i18n="btn_post">POST-TEST</button>
+        </div>
+      </div>
+      <div class="fg">
+        <label data-i18n="setup_date_lbl">Date</label>
+        <input type="date" id="s-date">
+      </div>
+      <div class="fg">
+        <label>
+          <span data-i18n="setup_code_lbl">Session / Class Code</span>
+          <span style="font-weight:400;color:var(--muted);font-size:12px;" data-i18n="setup_code_hint"> &mdash; use the same code for pre &amp; post in the same class</span>
+        </label>
+        <input type="text" id="s-code" placeholder="e.g. Class-7A-Term2">
+      </div>
+      <div class="fg">
+        <label data-i18n="setup_loc_lbl">School Location</label>
+        <div class="radio-row">
+          <label class="ropt"><input type="radio" name="loc" value="Rural" checked><span data-i18n="rural">Rural</span></label>
+          <label class="ropt"><input type="radio" name="loc" value="Urban"><span data-i18n="urban">Urban</span></label>
+        </div>
+      </div>
+      <div class="fg">
+        <label data-i18n="setup_cur_lbl">Curriculum Type</label>
+        <div class="radio-row">
+          <label class="ropt"><input type="radio" name="cur" value="Short" checked><span data-i18n="cur_short">Short</span></label>
+          <label class="ropt"><input type="radio" name="cur" value="Long"><span data-i18n="cur_long">Long</span></label>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" style="margin-top:4px;" onclick="startSession()" data-i18n="setup_start">Start Session</button>
+    </div>
+  </div>
+</div>
+
+<!-- QUESTIONNAIRE FORM -->
+<div id="s-form" class="screen">
+  <div class="hbar">
+    <h1 data-i18n="form_h">Evident: Leaked Survey</h1>
+    <select class="lang-sel" onchange="setLang(this.value)" id="ls-form">
+      <option value="en">EN</option><option value="th">TH</option>
+      <option value="es">ES</option><option value="sm">SM</option>
+      <option value="to">TO</option><option value="fj">FJ</option><option value="mi">MI</option>
+    </select>
+  </div>
+  <div id="sbanner" class="sbanner"></div>
+  <div class="wrap" style="padding-top:14px;">
+    <div class="prog"><div class="prog-fill" id="prog"></div></div>
+    <div class="intro" id="form-intro">
+      <p><strong data-i18n="intro_hi">Hi!</strong></p>
+      <p data-i18n="intro_p1">You are invited to take part in a workshop about how you use the internet, how it connects to your friendships and relationships, and how to stay safe and feel good online.</p>
+      <p data-i18n="intro_p2">Before and after the workshop, you will be asked to complete a short multiple-choice questionnaire. This helps us understand what you already know and whether the workshop helps you learn new things.</p>
+      <p><strong data-i18n="intro_imp">A few important things:</strong></p>
+      <p>1. <span data-i18n="intro_r1">Do not write your name on the questionnaire. Your answers are anonymous.</span></p>
+      <p>2. <span data-i18n="intro_r2">Please fill in your age and gender.</span></p>
+      <p>3. <span data-i18n="intro_r3">Please answer all the questions by selecting the option that best matches your thoughts or experiences.</span></p>
+      <p data-i18n="intro_ty">Thank you for taking part! Your answers will help improve this workshop for other young people.</p>
+    </div>
+    <div class="card">
+      <div class="fg-row">
+        <div class="fg">
+          <label data-i18n="lbl_age">Age</label>
+          <input type="number" id="f-age" min="8" max="25" placeholder="e.g. 15">
+        </div>
+        <div class="fg">
+          <label data-i18n="lbl_gender">Gender</label>
+          <select id="f-gender">
+            <option value="" data-i18n="gender_sel">Select...</option>
+            <option value="Male" data-i18n="gender_m">Male</option>
+            <option value="Female" data-i18n="gender_f">Female</option>
+            <option value="Other" data-i18n="gender_o">Other</option>
+            <option value="Prefer not to say" data-i18n="gender_p">Prefer not to say</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div id="qcontainer"></div>
+    <p class="req-msg" id="req-msg" data-i18n="req_msg">Please answer all questions before submitting.</p>
+    <button class="btn btn-primary btn-full" id="sub-btn" onclick="submitForm()" style="margin-bottom:40px;" data-i18n="sub_btn">Submit Answers</button>
+  </div>
+</div>
+
+<!-- THANK YOU -->
+<div id="s-thankyou" class="screen">
+  <div class="hbar"><h1 data-i18n="ty_h">Evident: Leaked Survey</h1></div>
+  <div class="wrap">
+    <div class="ty-card">
+      <div class="ty-icon">&#9989;</div>
+      <h2 data-i18n="ty_title">Thank you!</h2>
+      <p data-i18n="ty_msg">Your answers have been recorded. Thank you for taking part!</p>
+      <button class="btn btn-primary" onclick="nextStudent()" data-i18n="ty_next">Next Student</button>
+      <br><br>
+      <button class="btn btn-secondary" onclick="endSession()" data-i18n="ty_end">End Session</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN RESULTS DASHBOARD -->
+<div id="s-admin" class="screen">
+  <div class="hbar">
+    <h1 data-i18n="admin_h">Results Dashboard</h1>
+    <button class="btn" style="background:rgba(255,255,255,.15);color:#fff;font-size:12px;padding:6px 12px;" onclick="showScreen('login')" data-i18n="admin_back">Back</button>
+  </div>
+  <div class="wrap" style="padding-top:18px;">
+    <div class="tabs">
+      <div class="tab active" onclick="adminTab('overview')" data-i18n="tab_ov">Overview</div>
+      <div class="tab" onclick="adminTab('questions')" data-i18n="tab_q">Questions</div>
+      <div class="tab" onclick="adminTab('data')" data-i18n="tab_data">Raw Data</div>
+    </div>
+    <p id="admin-loading" style="text-align:center;padding:40px;color:var(--muted);">Loading...</p>
+    <div id="tab-overview" class="tab-content" style="display:none;">
+      <div class="stats" id="stats"></div>
+      <div class="cchart"><h3 data-i18n="ch_gender">Gender Distribution</h3><canvas id="ch-gender" height="160"></canvas></div>
+      <div class="cchart"><h3 data-i18n="ch_age">Age Distribution</h3><canvas id="ch-age" height="160"></canvas></div>
+      <div class="cchart"><h3 data-i18n="ch_pp">Pre vs Post Submissions</h3><canvas id="ch-pp" height="130"></canvas></div>
+    </div>
+    <div id="tab-questions" class="tab-content" style="display:none;">
+      <div id="qcharts"></div>
+    </div>
+    <div id="tab-data" class="tab-content" style="display:none;">
+      <div style="overflow-x:auto;">
+        <table class="dtable">
+          <thead><tr id="tbl-hd"></tr></thead>
+          <tbody id="tbl-bd"></tbody>
+        </table>
+      </div>
+      <div style="margin-top:12px;">
+        <button class="btn btn-outline" onclick="exportCSV()" data-i18n="export_csv">Export CSV</button>
+        <span style="font-size:12px;color:var(--muted);margin-left:10px;" id="row-count"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// No template literals (backticks) in this file.
+// Apps Script document.write breaks on backtick characters.
+
+var S = { lang:'en', pw:'', prePost:'Pre', date:'', code:'', loc:'Rural', cur:'Short', adminData:null };
+var tlCache = {};
+var charts  = {};
+
+var QS = [
+  { id:'q1',  type:'agree', text:'Do you agree with this statement?',
+    stmt:'"It\'s a sign someone is pressuring me online if the person gets angry when I do not reply."' },
+  { id:'q2',  type:'agree', text:'Do you agree with this statement?',
+    stmt:'"It\'s a sign someone is pressuring me online if I feel very uncomfortable during the interaction."' },
+  { id:'q3',  type:'agree', text:'Do you agree with this statement?',
+    stmt:'"It\'s a sign someone is pressuring me online if the person asks what I am doing tonight."' },
+  { id:'q4',  type:'agree', text:'Do you agree with this statement?',
+    stmt:'"It\'s a sign someone is pressuring me online if the person keeps asking for personal information after I said \'no\' or stopped replying."' },
+  { id:'q5',  type:'conf',  text:'If an upper classmate you are chatting with online asks personal questions that make you uncomfortable, how confident would you be to just stop replying?' },
+  { id:'q6',  type:'conf',  text:'If an upper classmate asks for sexy pictures online that you don\'t want to send, how confident would you be to ask someone for advice?' },
+  { id:'q7',  type:'multi', text:'I can retrain my algorithm and change the kind of content I see by: (select all that apply)',
+    opts:[
+      { k:'scroll',  t:'Scroll past or skip unwanted content' },
+      { k:'tools',   t:'Use tools like "not interested", "hide post", "unfollow", "mute"' },
+      { k:'history', t:'Clear my watch and search history' },
+      { k:'follow',  t:'Follow accounts that make me feel more positive' },
+      { k:'notsure', t:'Not sure', ns:true }
+    ]},
+  { id:'q8',  type:'conf',  text:'How confident are you to explain what \'consent\' is to your friends?' },
+  { id:'q9',  type:'agree', text:'Do you agree with this statement?',
+    stmt:'"When I am online, I cannot control all that happens to me, but I can control how I respond."' },
+  { id:'q10', type:'agree', text:'Do you agree with this statement?',
+    stmt:'"Reacting straight away to something hurtful online can lead to more harm than waiting and thinking before reacting."' },
+  { id:'q11', type:'agree', text:'Do you agree with this statement?',
+    stmt:'"Being mean online is not as bad behaviour as being mean to their face in real life."' },
+  { id:'q12', type:'agree', text:'Do you agree with this statement?',
+    stmt:'"My friend shared a nude picture of their ex in a group chat without their permission. This is the ex\'s fault for taking the nude picture."' },
+  { id:'q13', type:'agree', text:'Do you agree with this statement?',
+    stmt:'"My friend has shared a nude picture of their ex in a group chat without their permission. I will tell the group to stop even if it means people might think I can\'t take a joke."' }
+];
+
+var AGREE_OPTS = [
+  { v:'Strongly agree',    l:'Strongly agree' },
+  { v:'Agree',             l:'Agree' },
+  { v:'Disagree',          l:'Disagree' },
+  { v:'Strongly disagree', l:'Strongly disagree' },
+  { v:'Not sure',          l:'Not sure', ns:true }
+];
+var CONF_OPTS = [
+  { v:'Not confident at all', l:'Not confident at all' },
+  { v:'A little confident',   l:'A little confident' },
+  { v:'Confident',            l:'Confident' },
+  { v:'Very confident',       l:'Very confident' },
+  { v:'Not sure',             l:'Not sure', ns:true }
+];
+
+var EN = {
+  login_sub:'Pre / Post Survey',
+  login_pw_lbl:'Password',
+  login_start:'Start Test',
+  login_admin:'View Results (Admin)',
+  lang_note:'Note: Pacific island language translations are machine-generated and quality may vary.',
+  setup_h:'Facilitator Setup',
+  badge_fac:'Facilitator Only',
+  setup_session:'Session Details',
+  setup_type_lbl:'Test Type',
+  btn_pre:'PRE-TEST',
+  btn_post:'POST-TEST',
+  setup_date_lbl:'Date',
+  setup_code_lbl:'Session / Class Code',
+  setup_code_hint:' -- use the same code for pre & post in the same class',
+  setup_loc_lbl:'School Location',
+  rural:'Rural',
+  urban:'Urban',
+  setup_cur_lbl:'Curriculum Type',
+  cur_short:'Short',
+  cur_long:'Long',
+  setup_start:'Start Session',
+  form_h:'Evident: Leaked Survey',
+  intro_hi:'Hi!',
+  intro_p1:'You are invited to take part in a workshop about how you use the internet, how it connects to your friendships and relationships, and how to stay safe and feel good online.',
+  intro_p2:'Before and after the workshop, you will be asked to complete a short multiple-choice questionnaire. This helps us understand what you already know and whether the workshop helps you learn new things.',
+  intro_imp:'A few important things:',
+  intro_r1:'Do not write your name on the questionnaire. Your answers are anonymous.',
+  intro_r2:'Please fill in your age and gender.',
+  intro_r3:'Please answer all the questions by selecting the option that best matches your thoughts or experiences.',
+  intro_ty:'Thank you for taking part! Your answers will help improve this workshop for other young people.',
+  lbl_age:'Age',
+  lbl_gender:'Gender',
+  gender_sel:'Select...',
+  gender_m:'Male',
+  gender_f:'Female',
+  gender_o:'Other',
+  gender_p:'Prefer not to say',
+  req_msg:'Please answer all questions before submitting.',
+  sub_btn:'Submit Answers',
+  ty_h:'Evident: Leaked Survey',
+  ty_title:'Thank you!',
+  ty_msg:'Your answers have been recorded. Thank you for taking part!',
+  ty_next:'Next Student',
+  ty_end:'End Session',
+  admin_h:'Results Dashboard',
+  admin_back:'Back',
+  tab_ov:'Overview',
+  tab_q:'Questions',
+  tab_data:'Raw Data',
+  ch_gender:'Gender Distribution',
+  ch_age:'Age Distribution',
+  ch_pp:'Pre vs Post Submissions',
+  export_csv:'Export CSV'
+};
+
+var PACIFIC = ['sm','to','fj','mi'];
+var PALETTE  = ['#0E7C66','#D86DCB','#1F3864','#e67e22','#e74c3c','#9b59b6','#2ecc71','#3498db'];
+
+// ── Translation ───────────────────────────────────────────────
+function tlFetch(text, lang) {
+  if (!text || lang === 'en') return Promise.resolve(text);
+  var k = lang + ':' + text;
+  if (tlCache[k]) return Promise.resolve(tlCache[k]);
+  var url = 'https://api.mymemory.translated.net/get?q=' + encodeURIComponent(text.slice(0,490)) + '&langpair=en|' + lang;
+  return fetch(url)
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.responseStatus === 200 && d.responseData && d.responseData.translatedText) {
+        tlCache[k] = d.responseData.translatedText;
+        return tlCache[k];
+      }
+      return text;
+    })
+    .catch(function(){ return text; });
+}
+
+function setLang(lang) {
+  S.lang = lang;
+  ['ls-login','ls-setup','ls-form'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.value = lang;
+  });
+  var note = document.getElementById('lang-note');
+  if (note) note.style.display = PACIFIC.indexOf(lang) >= 0 ? 'block' : 'none';
+  if (lang === 'en') { applyTl({}); rerenderQ({}); return; }
+
+  document.body.classList.add('translating');
+
+  var t = {};
+  var enKeys = Object.keys(EN);
+  var scaleItems = AGREE_OPTS.map(function(o){ return { k:'a_'+o.v, v:o.l }; })
+    .concat(CONF_OPTS.map(function(o){ return { k:'c_'+o.v, v:o.l }; }));
+  var qItems = [];
+  QS.forEach(function(q){
+    qItems.push({ k:'qt_'+q.id, v:q.text });
+    if (q.stmt) qItems.push({ k:'qs_'+q.id, v:q.stmt });
+    if (q.opts) q.opts.forEach(function(o){ qItems.push({ k:'qo_'+q.id+'_'+o.k, v:o.t }); });
+  });
+
+  var allItems = enKeys.map(function(k){ return { k:k, v:EN[k] }; }).concat(scaleItems).concat(qItems);
+  var promises = allItems.map(function(item){
+    return tlFetch(item.v, lang).then(function(tx){ t[item.k] = tx; });
+  });
+
+  Promise.all(promises).then(function(){
+    applyTl(t);
+    rerenderQ(t);
+    document.body.classList.remove('translating');
+  });
+}
+
+function gt(key, t) { return (t && t[key]) || EN[key] || ''; }
+
+function applyTl(t) {
+  document.querySelectorAll('[data-i18n]').forEach(function(el){
+    var k = el.getAttribute('data-i18n');
+    var v = gt(k, t);
+    if (v) el.innerHTML = v;
+  });
+}
+
+// ── Screens ───────────────────────────────────────────────────
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('s-'+name).classList.add('active');
+}
+
+// ── Login ─────────────────────────────────────────────────────
+function doLogin(mode) {
+  var pw  = document.getElementById('login-pw').value.trim();
+  var err = document.getElementById('login-err');
+  err.textContent = '';
+  if (!pw) { err.textContent = 'Please enter the password.'; return; }
+
+  if (typeof google === 'undefined' || !google.script || !google.script.run) {
+    err.textContent = 'Open this page via your deployed Apps Script URL (/exec), not directly from a file.';
+    return;
+  }
+
+  err.innerHTML = '<span class="spin"></span>Checking...';
+
+  google.script.run
+    .withSuccessHandler(function(ok){
+      err.textContent = '';
+      if (!ok) { err.textContent = 'Incorrect password. Please try again.'; return; }
+      S.pw = pw;
+      if (mode === 'admin') { showScreen('admin'); loadAdmin(); }
+      else { document.getElementById('s-date').value = todayISO(); showScreen('setup'); }
+    })
+    .withFailureHandler(function(e){
+      err.textContent = 'Error: ' + (e.message || String(e));
+    })
+    .validatePassword(pw);
+}
+
+// ── Setup ─────────────────────────────────────────────────────
+function setPP(v) {
+  S.prePost = v;
+  document.getElementById('btn-pre').className  = v === 'Pre'  ? 'tpre'  : '';
+  document.getElementById('btn-post').className = v === 'Post' ? 'tpost' : '';
+}
+
+function startSession() {
+  S.date = document.getElementById('s-date').value;
+  S.code = document.getElementById('s-code').value.trim() || 'No code';
+  var locEl = document.querySelector('input[name="loc"]:checked');
+  var curEl = document.querySelector('input[name="cur"]:checked');
+  S.loc = locEl ? locEl.value : 'Rural';
+  S.cur = curEl ? curEl.value : 'Short';
+
+  document.getElementById('sbanner').innerHTML =
+    '<span><strong>' + S.prePost + '-TEST</strong></span>' +
+    '<span>Date: <strong>' + S.date + '</strong></span>' +
+    '<span>Code: <strong>' + S.code + '</strong></span>' +
+    '<span>' + S.loc + ' &middot; ' + S.cur + '</span>';
+
+  rerenderQ({});
+  showScreen('form');
+  window.scrollTo(0,0);
+}
+
+// ── Render questions ──────────────────────────────────────────
+function rerenderQ(t) {
+  var c = document.getElementById('qcontainer');
+  if (!c) return;
+  c.innerHTML = '';
+  QS.forEach(function(q, i){
+    var div = document.createElement('div');
+    div.className = 'qcard';
+    div.id = 'qc-' + q.id;
+    var text = gt('qt_'+q.id, t) || q.text;
+    var stmt = q.stmt ? (gt('qs_'+q.id, t) || q.stmt) : '';
+    var html = '<div class="qnum">Q'+(i+1)+'</div><div class="qtext">'+text+'</div>';
+    if (stmt) html += '<div class="qstmt">'+stmt+'</div>';
+    if (q.type === 'agree') html += likertHtml(q.id, AGREE_OPTS, t, 'a');
+    else if (q.type === 'conf') html += likertHtml(q.id, CONF_OPTS, t, 'c');
+    else if (q.type === 'multi') html += multiHtml(q, t);
+    div.innerHTML = html;
+    c.appendChild(div);
+  });
+  c.querySelectorAll('input').forEach(function(el){ el.addEventListener('change', updateProgress); });
+}
+
+function likertHtml(qid, opts, t, prefix) {
+  var html = '<div class="likert">';
+  opts.forEach(function(o, i){
+    var elId = qid + '-' + i;
+    var lbl  = gt(prefix+'_'+o.v, t) || o.l;
+    html += '<div class="lopt' + (o.ns ? ' ns' : '') + '">';
+    html += '<input type="radio" name="'+qid+'" id="'+elId+'" value="'+o.v+'">';
+    html += '<label for="'+elId+'">'+lbl+'</label>';
+    html += '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function multiHtml(q, t) {
+  var html = '<div class="checks">';
+  q.opts.forEach(function(o){
+    var elId = q.id + '-' + o.k;
+    var lbl  = gt('qo_'+q.id+'_'+o.k, t) || o.t;
+    html += '<label class="chkopt">';
+    html += '<input type="checkbox" id="'+elId+'" value="'+o.k+'">';
+    html += lbl + '</label>';
+  });
+  html += '</div>';
+  return html;
+}
+
+// ── Progress ──────────────────────────────────────────────────
+function updateProgress() {
+  var done = 0;
+  QS.forEach(function(q){
+    if (q.type === 'multi') {
+      var any = q.opts.some(function(o){
+        var el = document.getElementById(q.id+'-'+o.k);
+        return el && el.checked;
+      });
+      if (any) done++;
+    } else {
+      if (document.querySelector('input[name="'+q.id+'"]:checked')) done++;
+    }
+  });
+  document.getElementById('prog').style.width = Math.round((done / QS.length) * 100) + '%';
+}
+
+// ── Submit ────────────────────────────────────────────────────
+function submitForm() {
+  var age    = document.getElementById('f-age').value;
+  var gender = document.getElementById('f-gender').value;
+  var valid  = !!(age && gender);
+
+  QS.forEach(function(q){
+    if (q.type === 'multi') {
+      var any = q.opts.some(function(o){
+        var el = document.getElementById(q.id+'-'+o.k);
+        return el && el.checked;
+      });
+      if (!any) valid = false;
+    } else {
+      if (!document.querySelector('input[name="'+q.id+'"]:checked')) valid = false;
+    }
+  });
+
+  if (!valid) {
+    var msg = document.getElementById('req-msg');
+    msg.style.display = 'block';
+    msg.scrollIntoView({ behavior:'smooth', block:'center' });
+    return;
+  }
+
+  var data = {
+    prePost: S.prePost, sessionCode: S.code, date: S.date,
+    schoolLocation: S.loc, curriculumType: S.cur,
+    age: parseInt(age, 10), gender: gender
+  };
+  QS.forEach(function(q){
+    if (q.type === 'multi') {
+      q.opts.forEach(function(o){
+        var el = document.getElementById(q.id+'-'+o.k);
+        data[q.id+'_'+o.k] = (el && el.checked) ? 1 : 0;
+      });
+    } else {
+      var sel = document.querySelector('input[name="'+q.id+'"]:checked');
+      data[q.id] = sel ? sel.value : '';
+    }
+  });
+
+  var btn = document.getElementById('sub-btn');
+  btn.innerHTML = '<span class="spin"></span>Submitting...';
+  btn.disabled  = true;
+
+  google.script.run
+    .withSuccessHandler(function(){ showScreen('thankyou'); window.scrollTo(0,0); })
+    .withFailureHandler(function(e){
+      alert('Submission failed: ' + (e.message || String(e)));
+      btn.innerHTML = EN.sub_btn;
+      btn.disabled  = false;
+    })
+    .submitFormData(data, S.pw);
+}
+
+function nextStudent() {
+  document.getElementById('f-age').value   = '';
+  document.getElementById('f-gender').value = '';
+  document.getElementById('qcontainer').querySelectorAll('input').forEach(function(el){ el.checked = false; });
+  document.getElementById('req-msg').style.display = 'none';
+  document.getElementById('prog').style.width = '0%';
+  showScreen('form');
+  window.scrollTo(0,0);
+}
+
+function endSession() {
+  S.pw = '';
+  showScreen('login');
+  document.getElementById('login-pw').value = '';
+}
+
+// ── Admin ─────────────────────────────────────────────────────
+function loadAdmin() {
+  document.getElementById('admin-loading').style.display = 'block';
+  document.querySelectorAll('.tab-content').forEach(function(el){ el.style.display = 'none'; });
+  google.script.run
+    .withSuccessHandler(function(rows){
+      document.getElementById('admin-loading').style.display = 'none';
+      S.adminData = rows;
+      buildAdmin();
+    })
+    .withFailureHandler(function(e){
+      document.getElementById('admin-loading').textContent = 'Error: ' + (e.message || String(e));
+    })
+    .getResults(S.pw);
+}
+
+function adminTab(name) {
+  var names = ['overview','questions','data'];
+  document.querySelectorAll('.tab').forEach(function(el, i){
+    el.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.tab-content').forEach(function(el){ el.style.display = 'none'; });
+  var el = document.getElementById('tab-'+name);
+  if (el) el.style.display = 'block';
+}
+
+function buildAdmin() {
+  var all = S.adminData;
+  if (!all || all.length < 2) {
+    document.getElementById('admin-loading').style.display = 'block';
+    document.getElementById('admin-loading').textContent   = 'No responses yet.';
+    return;
+  }
+  var headers = all[0];
+  var rows = all.slice(1).map(function(r){
+    var obj = {};
+    headers.forEach(function(h, i){ obj[h] = r[i]; });
+    return obj;
+  });
+  var pre  = rows.filter(function(r){ return r['Pre/Post'] === 'Pre'; });
+  var post = rows.filter(function(r){ return r['Pre/Post'] === 'Post'; });
+  var sessions = {};
+  rows.forEach(function(r){ sessions[r['Session Code']] = 1; });
+
+  document.getElementById('stats').innerHTML =
+    [[rows.length,'Total Submissions'],[pre.length,'Pre-Tests'],[post.length,'Post-Tests'],[Object.keys(sessions).length,'Sessions']]
+    .map(function(x){ return '<div class="stat"><div class="n">'+x[0]+'</div><div class="l">'+x[1]+'</div></div>'; }).join('');
+
+  var gc = {};
+  rows.forEach(function(r){ var g = r['Gender'] || 'Unknown'; gc[g] = (gc[g]||0)+1; });
+  makeChart('ch-gender','pie', Object.keys(gc), Object.values(gc), PALETTE);
+
+  var ab = {'Under 12':0,'12-14':0,'15-17':0,'18-20':0,'21+':0};
+  rows.forEach(function(r){
+    var a = parseInt(r['Age'],10);
+    if (a < 12) ab['Under 12']++;
+    else if (a <= 14) ab['12-14']++;
+    else if (a <= 17) ab['15-17']++;
+    else if (a <= 20) ab['18-20']++;
+    else ab['21+']++;
+  });
+  makeChart('ch-age','bar', Object.keys(ab), Object.values(ab), '#0E7C66');
+  makeChart('ch-pp','bar', ['Pre-Test','Post-Test'], [pre.length, post.length], ['#0E7C66','#D86DCB']);
+
+  var qc = document.getElementById('qcharts');
+  qc.innerHTML = '';
+  // Q7 column name map (matches Code.gs HEADERS array)
+  var optColMap = {
+    scroll:'Q7 – Scroll past',
+    tools:'Q7 – Use tools',
+    history:'Q7 – Clear history',
+    follow:'Q7 – Follow positive',
+    notsure:'Q7 – Not sure'
+  };
+
+  QS.forEach(function(q, i){
+    var card     = document.createElement('div');
+    card.className = 'cchart';
+    var canvasId = 'qch-' + q.id;
+    var qLabel   = 'Q'+(i+1)+': '+q.text.slice(0,65)+'...';
+
+    if (q.type === 'agree' || q.type === 'conf') {
+      var opts   = q.type === 'agree' ? AGREE_OPTS : CONF_OPTS;
+      var counts = {};
+      opts.forEach(function(o){ counts[o.v] = 0; });
+      rows.forEach(function(r){
+        var v = r[q.id.toUpperCase()];
+        if (v === undefined) v = r[q.id];
+        if (v !== undefined && v !== '' && counts[v] !== undefined) counts[v]++;
+      });
+      card.innerHTML = '<h3>'+qLabel+'</h3><canvas id="'+canvasId+'" height="130"></canvas>';
+      qc.appendChild(card);
+      (function(cid, cts){ setTimeout(function(){ makeChart(cid,'bar',Object.keys(cts),Object.values(cts),'#0E7C66'); },30); })(canvasId, counts);
+    } else {
+      var oc = {};
+      q.opts.forEach(function(o){
+        var col = optColMap[o.k] || o.k;
+        oc[o.t.slice(0,30)] = rows.filter(function(r){ return String(r[col]) === '1'; }).length;
+      });
+      card.innerHTML = '<h3>'+qLabel+'</h3><canvas id="'+canvasId+'" height="130"></canvas>';
+      qc.appendChild(card);
+      (function(cid, oc2){ setTimeout(function(){ makeChart(cid,'bar',Object.keys(oc2),Object.values(oc2),'#D86DCB'); },30); })(canvasId, oc);
+    }
+  });
+
+  document.getElementById('tbl-hd').innerHTML = headers.map(function(h){ return '<th>'+h+'</th>'; }).join('');
+  document.getElementById('tbl-bd').innerHTML = rows.slice(0,200).map(function(row){
+    return '<tr>'+headers.map(function(h){ return '<td>'+(row[h] !== undefined && row[h] !== null ? row[h] : '')+'</td>'; }).join('')+'</tr>';
+  }).join('');
+  document.getElementById('row-count').textContent = 'Showing ' + Math.min(rows.length,200) + ' of ' + rows.length + ' rows';
+
+  adminTab('overview');
+}
+
+function makeChart(id, type, labels, data, colors) {
+  var ctx = document.getElementById(id);
+  if (!ctx) return;
+  if (charts[id]) { charts[id].destroy(); }
+  var bg = Array.isArray(colors) ? colors : (function(){
+    var a = [];
+    for (var i=0; i<labels.length; i++) a.push(colors);
+    return a;
+  })();
+  charts[id] = new Chart(ctx, {
+    type: type,
+    data: { labels: labels, datasets: [{ data: data, backgroundColor: bg, borderRadius: 4, borderWidth: 0 }] },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: type === 'pie' } },
+      scales: type !== 'pie' ? { y: { beginAtZero: true, ticks: { stepSize:1, precision:0 } } } : {}
+    }
+  });
+}
+
+function exportCSV() {
+  if (!S.adminData) return;
+  var csv = S.adminData.map(function(r){
+    return r.map(function(c){
+      var s = (c !== undefined && c !== null) ? String(c) : '';
+      return '"' + s.replace(/"/g, '""') + '"';
+    }).join(',');
+  }).join('\r\n');
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+  a.download = 'leaked-prepost-' + todayISO() + '.csv';
+  a.click();
+}
+
+function todayISO() { return new Date().toISOString().split('T')[0]; }
+
+window.addEventListener('load', function(){
+  document.getElementById('s-date').value = todayISO();
+  document.getElementById('s-form').addEventListener('change', updateProgress);
+});
+</script>
+</body>
+</html>
