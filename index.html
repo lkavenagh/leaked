@@ -26,6 +26,7 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color:
 
 /* ── Container ── */
 .wrap { max-width: 680px; margin: 0 auto; padding: 20px; }
+#s-admin .wrap { max-width: 960px; }
 
 /* ── Header bar ── */
 .hbar {
@@ -178,6 +179,12 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color:
 .stat .l { font-size: 12px; color: var(--muted); margin-top: 3px; }
 .cchart { background: #fff; border-radius: var(--r); padding: 18px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
 .cchart h3 { font-size: 13px; color: var(--navy); font-weight: 600; margin-bottom: 14px; }
+.qrow-label { font-size: 13px; font-weight: 600; color: var(--navy); padding: 10px 0 4px; border-top: 1px solid #eee; margin-top: 6px; }
+.qrow-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 4px; }
+.qcol-head { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 8px; }
+.qcol-head div { background: var(--teal); color: #fff; text-align: center; font-size: 13px; font-weight: 600; padding: 6px; border-radius: 6px; }
+.admin-note { font-size: 12px; color: var(--muted); margin: -6px 0 16px; }
+.avg-badge { display: inline-block; margin-left: 12px; font-size: 12px; font-weight: 400; color: var(--muted); }
 .dtable { width: 100%; border-collapse: collapse; font-size: 12px; }
 .dtable th { background: var(--navy); color: #fff; padding: 8px 10px; text-align: left; white-space: nowrap; }
 .dtable td { padding: 7px 10px; border-bottom: 1px solid var(--border); }
@@ -244,7 +251,8 @@ body.translating .wrap, body.translating .qcard, body.translating .intro { opaci
 <!-- FACILITATOR SETUP -->
 <div id="s-setup" class="screen">
   <div class="hbar">
-    <h1 data-i18n="setup_h">Facilitator Setup</h1>
+    <button class="btn" style="background:rgba(255,255,255,.15);color:#fff;font-size:12px;padding:6px 12px;flex-shrink:0;" onclick="endSession()">&#8592; Back</button>
+    <h1 data-i18n="setup_h" style="flex:1;text-align:center;">Facilitator Setup</h1>
     <select class="lang-sel" onchange="setLang(this.value)" id="ls-setup">
       <option value="en">EN</option><option value="th">TH</option>
       <option value="es">ES</option><option value="sm">SM</option>
@@ -295,7 +303,8 @@ body.translating .wrap, body.translating .qcard, body.translating .intro { opaci
 <!-- QUESTIONNAIRE FORM -->
 <div id="s-form" class="screen">
   <div class="hbar">
-    <h1 data-i18n="form_h">Evident: Leaked Survey</h1>
+    <button class="btn" style="background:rgba(255,255,255,.15);color:#fff;font-size:12px;padding:6px 12px;flex-shrink:0;" onclick="formBack()">&#8592; Back</button>
+    <h1 data-i18n="form_h" style="flex:1;text-align:center;">Evident: Leaked Survey</h1>
     <select class="lang-sel" onchange="setLang(this.value)" id="ls-form">
       <option value="en">EN</option><option value="th">TH</option>
       <option value="es">ES</option><option value="sm">SM</option>
@@ -349,7 +358,7 @@ body.translating .wrap, body.translating .qcard, body.translating .intro { opaci
       <p data-i18n="ty_msg">Your answers have been recorded. Thank you for taking part!</p>
       <button class="btn btn-primary" onclick="nextStudent()" data-i18n="ty_next">Next Student</button>
       <br><br>
-      <button class="btn btn-secondary" onclick="endSession()" data-i18n="ty_end">End Session</button>
+<button class="btn btn-secondary" onclick="endSession()" data-i18n="ty_end">End Session</button>
     </div>
   </div>
 </div>
@@ -369,11 +378,13 @@ body.translating .wrap, body.translating .qcard, body.translating .intro { opaci
     <p id="admin-loading" style="text-align:center;padding:40px;color:var(--muted);">Loading...</p>
     <div id="tab-overview" class="tab-content" style="display:none;">
       <div class="stats" id="stats"></div>
+      <div class="cchart"><h3 data-i18n="ch_pp">Pre vs Post Submissions</h3><canvas id="ch-pp" height="130"></canvas></div>
+      <p class="admin-note">* Demographic charts below count Pre-Tests only — each student completes one pre and one post, so counting both would double-count participants.</p>
       <div class="cchart"><h3 data-i18n="ch_gender">Gender Distribution</h3><canvas id="ch-gender" height="160"></canvas></div>
       <div class="cchart"><h3 data-i18n="ch_age">Age Distribution</h3><canvas id="ch-age" height="160"></canvas></div>
-      <div class="cchart"><h3 data-i18n="ch_pp">Pre vs Post Submissions</h3><canvas id="ch-pp" height="130"></canvas></div>
     </div>
     <div id="tab-questions" class="tab-content" style="display:none;">
+      <div class="qcol-head"><div>Pre-Test</div><div>Post-Test</div></div>
       <div id="qcharts"></div>
     </div>
     <div id="tab-data" class="tab-content" style="display:none;">
@@ -383,9 +394,10 @@ body.translating .wrap, body.translating .qcard, body.translating .intro { opaci
           <tbody id="tbl-bd"></tbody>
         </table>
       </div>
-      <div style="margin-top:12px;">
+      <div style="margin-top:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
         <button class="btn btn-outline" onclick="exportCSV()" data-i18n="export_csv">Export CSV</button>
-        <span style="font-size:12px;color:var(--muted);margin-left:10px;" id="row-count"></span>
+        <a id="sheet-link" href="#" target="_blank" style="font-size:13px;color:var(--teal);display:none;">Open in Google Sheets &#8599;</a>
+        <span style="font-size:12px;color:var(--muted);" id="row-count"></span>
       </div>
     </div>
   </div>
@@ -395,7 +407,7 @@ body.translating .wrap, body.translating .qcard, body.translating .intro { opaci
 // No template literals (backticks) in this file.
 // Apps Script document.write breaks on backtick characters.
 
-var S = { lang:'en', pw:'', prePost:'Pre', date:'', code:'', loc:'Rural', cur:'Short', adminData:null };
+var S = { lang:'en', pw:'', prePost:'Pre', date:'', code:'', loc:'Rural', cur:'Short', adminData:null, submissions:0 };
 var tlCache = {};
 var charts  = {};
 
@@ -439,10 +451,10 @@ var AGREE_OPTS = [
   { v:'Not sure',          l:'Not sure', ns:true }
 ];
 var CONF_OPTS = [
-  { v:'Not confident at all', l:'Not confident at all' },
-  { v:'A little confident',   l:'A little confident' },
-  { v:'Confident',            l:'Confident' },
   { v:'Very confident',       l:'Very confident' },
+  { v:'Confident',            l:'Confident' },
+  { v:'A little confident',   l:'A little confident' },
+  { v:'Not confident at all', l:'Not confident at all' },
   { v:'Not sure',             l:'Not sure', ns:true }
 ];
 
@@ -490,6 +502,7 @@ var EN = {
   ty_title:'Thank you!',
   ty_msg:'Your answers have been recorded. Thank you for taking part!',
   ty_next:'Next Student',
+  ty_setup:'Change Session Setup',
   ty_end:'End Session',
   admin_h:'Results Dashboard',
   admin_back:'Back',
@@ -741,7 +754,7 @@ function submitForm() {
   btn.disabled  = true;
 
   google.script.run
-    .withSuccessHandler(function(){ showScreen('thankyou'); window.scrollTo(0,0); })
+    .withSuccessHandler(function(){ S.submissions++; showScreen('thankyou'); window.scrollTo(0,0); })
     .withFailureHandler(function(e){
       alert('Submission failed: ' + (e.message || String(e)));
       btn.innerHTML = EN.sub_btn;
@@ -750,12 +763,20 @@ function submitForm() {
     .submitFormData(data, S.pw);
 }
 
+function formBack() {
+  showScreen(S.submissions > 0 ? 'thankyou' : 'setup');
+  window.scrollTo(0,0);
+}
+
 function nextStudent() {
-  document.getElementById('f-age').value   = '';
+  document.getElementById('f-age').value    = '';
   document.getElementById('f-gender').value = '';
   document.getElementById('qcontainer').querySelectorAll('input').forEach(function(el){ el.checked = false; });
   document.getElementById('req-msg').style.display = 'none';
   document.getElementById('prog').style.width = '0%';
+  var btn = document.getElementById('sub-btn');
+  btn.innerHTML = EN.sub_btn;
+  btn.disabled  = false;
   showScreen('form');
   window.scrollTo(0,0);
 }
@@ -771,13 +792,26 @@ function loadAdmin() {
   document.getElementById('admin-loading').style.display = 'block';
   document.querySelectorAll('.tab-content').forEach(function(el){ el.style.display = 'none'; });
   google.script.run
-    .withSuccessHandler(function(rows){
+    .withSuccessHandler(function(result){
+      console.log('[Admin] getResults returned:', result);
+      if (!result || !result.rows) {
+        document.getElementById('admin-loading').textContent = 'Could not load data — check that your Code.gs getResults function is saved and redeployed.';
+        return;
+      }
       document.getElementById('admin-loading').style.display = 'none';
-      S.adminData = rows;
-      buildAdmin();
+      S.adminData  = result.rows;
+      S.sheetUrl   = result.sheetUrl || '';
+      try {
+        buildAdmin();
+      } catch(e) {
+        console.error('[Admin] buildAdmin crashed:', e);
+        document.getElementById('admin-loading').style.display = 'block';
+        document.getElementById('admin-loading').textContent = 'Dashboard error: ' + e.message;
+      }
     })
     .withFailureHandler(function(e){
-      document.getElementById('admin-loading').textContent = 'Error: ' + (e.message || String(e));
+      document.getElementById('admin-loading').textContent = 'Error loading results: ' + (e.message || String(e));
+      console.error('[Admin] getResults error', e);
     })
     .getResults(S.pw);
 }
@@ -815,11 +849,11 @@ function buildAdmin() {
     .map(function(x){ return '<div class="stat"><div class="n">'+x[0]+'</div><div class="l">'+x[1]+'</div></div>'; }).join('');
 
   var gc = {};
-  rows.forEach(function(r){ var g = r['Gender'] || 'Unknown'; gc[g] = (gc[g]||0)+1; });
-  makeChart('ch-gender','pie', Object.keys(gc), Object.values(gc), PALETTE);
+  pre.forEach(function(r){ var g = r['Gender'] || 'Unknown'; gc[g] = (gc[g]||0)+1; });
+  makeChart('ch-gender','bar', Object.keys(gc), Object.values(gc), '#0E7C66');
 
   var ab = {'Under 12':0,'12-14':0,'15-17':0,'18-20':0,'21+':0};
-  rows.forEach(function(r){
+  pre.forEach(function(r){
     var a = parseInt(r['Age'],10);
     if (a < 12) ab['Under 12']++;
     else if (a <= 14) ab['12-14']++;
@@ -828,11 +862,10 @@ function buildAdmin() {
     else ab['21+']++;
   });
   makeChart('ch-age','bar', Object.keys(ab), Object.values(ab), '#0E7C66');
-  makeChart('ch-pp','bar', ['Pre-Test','Post-Test'], [pre.length, post.length], ['#0E7C66','#D86DCB']);
+  makeChart('ch-pp','bar', ['Pre-Test','Post-Test'], [pre.length, post.length], '#0E7C66');
 
   var qc = document.getElementById('qcharts');
   qc.innerHTML = '';
-  // Q7 column name map (matches Code.gs HEADERS array)
   var optColMap = {
     scroll:'Q7 – Scroll past',
     tools:'Q7 – Use tools',
@@ -841,34 +874,83 @@ function buildAdmin() {
     notsure:'Q7 – Not sure'
   };
 
-  QS.forEach(function(q, i){
-    var card     = document.createElement('div');
-    card.className = 'cchart';
-    var canvasId = 'qch-' + q.id;
-    var qLabel   = 'Q'+(i+1)+': '+q.text.slice(0,65)+'...';
+  // Score maps for average calculation (Not sure excluded)
+  var AGREE_SCORE = { 'Strongly agree':4, 'Agree':3, 'Disagree':2, 'Strongly disagree':1 };
+  var CONF_SCORE  = { 'Not confident at all':1, 'A little confident':2, 'Confident':3, 'Very confident':4 };
 
+  function qCounts(q, dataset) {
     if (q.type === 'agree' || q.type === 'conf') {
-      var opts   = q.type === 'agree' ? AGREE_OPTS : CONF_OPTS;
+      var opts = q.type === 'agree' ? AGREE_OPTS : CONF_OPTS;
+      var scoreMap = q.type === 'agree' ? AGREE_SCORE : CONF_SCORE;
       var counts = {};
       opts.forEach(function(o){ counts[o.v] = 0; });
-      rows.forEach(function(r){
+      var total = 0, n = 0;
+      dataset.forEach(function(r){
         var v = r[q.id.toUpperCase()];
         if (v === undefined) v = r[q.id];
-        if (v !== undefined && v !== '' && counts[v] !== undefined) counts[v]++;
+        if (v !== undefined && v !== '' && counts[v] !== undefined) {
+          counts[v]++;
+          if (scoreMap[v] !== undefined) { total += scoreMap[v]; n++; }
+        }
       });
-      card.innerHTML = '<h3>'+qLabel+'</h3><canvas id="'+canvasId+'" height="130"></canvas>';
-      qc.appendChild(card);
-      (function(cid, cts){ setTimeout(function(){ makeChart(cid,'bar',Object.keys(cts),Object.values(cts),'#0E7C66'); },30); })(canvasId, counts);
+      var avg = n > 0 ? (total / n).toFixed(1) : null;
+      return { labels: Object.keys(counts), values: Object.values(counts), avg: avg, avgMax: 4 };
     } else {
-      var oc = {};
+      var labels = [], values = [];
+      var colKeys = [];
       q.opts.forEach(function(o){
         var col = optColMap[o.k] || o.k;
-        oc[o.t.slice(0,30)] = rows.filter(function(r){ return String(r[col]) === '1'; }).length;
+        colKeys.push(col);
+        labels.push(o.t.slice(0,30));
+        values.push(dataset.filter(function(r){ return String(r[col]) === '1'; }).length);
       });
-      card.innerHTML = '<h3>'+qLabel+'</h3><canvas id="'+canvasId+'" height="130"></canvas>';
-      qc.appendChild(card);
-      (function(cid, oc2){ setTimeout(function(){ makeChart(cid,'bar',Object.keys(oc2),Object.values(oc2),'#D86DCB'); },30); })(canvasId, oc);
+      // avg = mean number of options ticked per respondent
+      var avgOpts = null;
+      if (dataset.length > 0) {
+        var totalTicked = 0;
+        dataset.forEach(function(r){
+          colKeys.forEach(function(col){ if (String(r[col]) === '1') totalTicked++; });
+        });
+        avgOpts = (totalTicked / dataset.length).toFixed(1);
+      }
+      return { labels: labels, values: values, avg: avgOpts, avgMax: q.opts.length };
     }
+  }
+
+  function avgBadge(pc, oc) {
+    if (pc.avg === null && oc.avg === null) return '';
+    var preStr  = pc.avg !== null ? pc.avg + ' / ' + pc.avgMax : '—';
+    var postStr = oc.avg !== null ? oc.avg + ' / ' + oc.avgMax : '—';
+    var arrow   = (pc.avg !== null && oc.avg !== null)
+      ? (parseFloat(oc.avg) > parseFloat(pc.avg) ? ' &#8593;' : parseFloat(oc.avg) < parseFloat(pc.avg) ? ' &#8595;' : ' &#8594;')
+      : '';
+    return '<div class="avg-badge">Avg: Pre <strong>' + preStr + '</strong> &rarr; Post <strong>' + postStr + '</strong>' + arrow + '</div>';
+  }
+
+  QS.forEach(function(q, i){
+    var qLabel = 'Q'+(i+1)+': '+q.text.slice(0,80)+(q.text.length > 80 ? '...' : '');
+
+    var pc = qCounts(q, pre);
+    var oc = qCounts(q, post);
+
+    var labelEl = document.createElement('div');
+    labelEl.className = 'qrow-label';
+    labelEl.innerHTML = qLabel + avgBadge(pc, oc);
+    qc.appendChild(labelEl);
+
+    var pair = document.createElement('div');
+    pair.className = 'qrow-pair';
+
+    var preId  = 'qch-pre-'  + q.id;
+    var postId = 'qch-post-' + q.id;
+    pair.innerHTML = '<div class="cchart"><canvas id="'+preId+'"  height="140"></canvas></div>'
+                   + '<div class="cchart"><canvas id="'+postId+'" height="140"></canvas></div>';
+    qc.appendChild(pair);
+
+    (function(pid, ppid, pcd, ocd){
+      makeChart(pid,  'bar', pcd.labels, pcd.values, '#0E7C66');
+      makeChart(ppid, 'bar', ocd.labels, ocd.values, '#0E7C66');
+    })(preId, postId, pc, oc);
   });
 
   document.getElementById('tbl-hd').innerHTML = headers.map(function(h){ return '<th>'+h+'</th>'; }).join('');
@@ -876,6 +958,8 @@ function buildAdmin() {
     return '<tr>'+headers.map(function(h){ return '<td>'+(row[h] !== undefined && row[h] !== null ? row[h] : '')+'</td>'; }).join('')+'</tr>';
   }).join('');
   document.getElementById('row-count').textContent = 'Showing ' + Math.min(rows.length,200) + ' of ' + rows.length + ' rows';
+  var sl = document.getElementById('sheet-link');
+  if (S.sheetUrl) { sl.href = S.sheetUrl; sl.style.display = 'inline'; }
 
   adminTab('overview');
 }
@@ -894,8 +978,11 @@ function makeChart(id, type, labels, data, colors) {
     data: { labels: labels, datasets: [{ data: data, backgroundColor: bg, borderRadius: 4, borderWidth: 0 }] },
     options: {
       responsive: true,
-      plugins: { legend: { display: type === 'pie' } },
-      scales: type !== 'pie' ? { y: { beginAtZero: true, ticks: { stepSize:1, precision:0 } } } : {}
+      animation: false,
+      animations: false,
+      transitions: { active: { animation: { duration: 0 } } },
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { stepSize:1, precision:0 } } }
     }
   });
 }

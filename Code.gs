@@ -33,7 +33,16 @@ function submitFormData(data, password) {
 
 function getResults(password) {
   if (password !== CONFIG.PASSWORD) throw new Error('Unauthorised');
-  return getOrCreateSheet().getDataRange().getValues();
+  const ss     = SpreadsheetApp.openById(CONFIG.SHEET_ID);
+  const sheet  = getOrCreateSheet();
+  const rawRows = sheet.getDataRange().getValues();
+  // google.script.run cannot serialize Date objects — convert to strings
+  const rows = rawRows.map(function(row) {
+    return row.map(function(cell) {
+      return cell instanceof Date ? cell.toISOString() : cell;
+    });
+  });
+  return { rows: rows, sheetUrl: ss.getUrl() };
 }
 
 // ── Internal helpers ─────────────────────────────────────────
